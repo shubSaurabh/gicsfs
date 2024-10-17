@@ -55,7 +55,9 @@ This will start the program, it has following options:
 
 ### Github OAuth authorization code flow
 
-User will have to setup github oauth app, and will have client ID and client secret. This is used to authorize the user. User will have to paste the client ID and client secret in the CLI. That can be done by logging into their github account and then navigating to user's setting (by clicking on the top right corner dropdown). Then navigating to "Developer settings" -> "OAuth Apps" -> "New OAuth App". Then they will have to fill the required fields and will get their client ID and client secret. App name can be anything, homepage and authorization callback URL MUST be https://localhost, this is the default callback URL for the CLI and because CLI is not running on any web server.
+User will have to setup github oauth app, and will have client ID and client secret. This is used to authorize the user. User will have to paste the client ID and client secret in the CLI. That can be done by logging into their github account and then navigating to user's setting (by clicking on the top right corner dropdown). Then navigating to "Developer settings" -> "OAuth Apps" -> "New OAuth App". Then they will have to fill the required fields and will get their client ID and client secret. App name can be anything, homepage and authorization callback URL MUST be https://localhost, this is the default callback URL for the CLI and because CLI is not running on any web server. When you are trying to login, and when the url provided by CLI takes you to a 404 by github, it mostly means that you entered wrong client ID or client secret.
+
+!!! Important note: client secret and master password prompts are hidden, so if you are copying any of the prompts, make sure you are copying the correct ones.
 
 ### Register
 
