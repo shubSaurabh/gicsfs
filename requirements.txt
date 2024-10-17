@@ -1,6 +1,9 @@
 requests
 requests-oauthlib
 pycryptodome
+pysqlcipher3
 
-apt install sqlcipher libsqlcipher0 libsqlcipher-dev
-from pysqlcipher3 import dbapi2 as sqlite
+# Note: The following are system-level dependencies and cannot be installed via pip:
+# sqlcipher
+# libsqlcipher0
+# libsqlcipher-dev
