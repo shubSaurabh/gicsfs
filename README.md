@@ -118,7 +118,7 @@ This will install the following Python packages:
 - requests: For making HTTP requests
 - requests-oauthlib: For handling OAuth 2.0 authentication
 - pycryptodome: For encryption and decryption operations
-- pysqlcipher3: Python bindings for SQLCipher
+- pysqlcipher3: Python bindings for SQLCipher IMPORTANT NOTE: This package is only available after the above mentioned system dependencies are installed. In case you see an error saying that pysqlcipher3 is not installed, it means that the system dependencies are not installed. install the system dependencies first and then pip install pysqlcipher3 again. 
 
 ### Note on Virtual Environments
 
