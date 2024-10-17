@@ -168,4 +168,14 @@ This module contains the logic for the authentication using Github OAuth authori
 ### cli.py  
 This module is the entry point for the program. It is the first module that is executed. It contains the main logic for the program. It uses the PyCryptodome library for encryption and decryption.
 
+### Testing
 
+Since this is a CLI based application, testing is done manually. However i have added comments in the code to make it more readable and understandable. Once setup is done, following test cases can be run:
+
+1. Register a new user and login with that user.
+2. Upload a file and list all files and check if the file is uploaded.
+3. Download a file and check if the file is downloaded.
+4. Delete a file and check if the file is deleted.
+5. Share a file with other users and check if the file is shared.
+6. Unshare a file with other users and check if the file is unshared.
+7. List all users and check if the users are listed.
