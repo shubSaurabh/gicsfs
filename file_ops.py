@@ -144,4 +144,64 @@ class FileManager:
                 self.logger.info(f"No files found for user '{username}'.")
         except Exception as e:
             self.logger.error(f"Error during listing files: {e}")
+            e = 'Error during listing files, please contact the admin.'
+            raise
+
+    def share(self, username, filename, shared_users):
+        """Share a file with other users."""
+        try:
+            # Validate that the file exists
+            file_metadata = self.db_manager.retrieve_file_metadata(username, filename)
+            if not file_metadata:
+                print(f"File '{filename}' not found.")
+                self.logger.warning(f"File '{filename}' not found.")
+                return
+
+            # Validate shared usernames
+            valid_users = self.db_manager.list_all_users()
+            invalid_users = [user for user in shared_users if user not in valid_users]
+            if invalid_users:
+                print(f"Invalid usernames: {', '.join(invalid_users)}")
+                return
+
+            self.db_manager.share_file(username, filename, shared_users)
+            print(f"File '{filename}' shared with: {', '.join(shared_users)}")
+            self.logger.info(f"File '{filename}' shared with: {', '.join(shared_users)}")
+        except Exception as e:
+            self.logger.error(f"Error during file sharing: {e}")
+            raise
+
+    def download_shared_file(self, owner_username, filename, requesting_username):
+        """Download a shared file."""
+        try:
+            # Retrieve file metadata
+            file_metadata = self.db_manager.get_shared_file_metadata(owner_username, filename, requesting_username)
+
+            if not file_metadata:
+                print(f"File '{filename}' not found or not shared with you.")
+                self.logger.warning(f"File '{filename}' not found or not shared with user '{requesting_username}'.")
+                return
+
+            encrypted_path = file_metadata[2]
+
+            # Retrieve owner's AES key and salt from the database
+            user_key, user_salt = self.db_manager.get_user_key_and_salt(owner_username)
+            if not user_key or not user_salt:
+                raise Exception(f"No encryption key or salt found for user '{owner_username}'.")
+
+            encryptor = AESEncryptor(user_key, base64.b64decode(user_salt.encode()), None, self.logger)
+
+            with open(encrypted_path, 'r') as file:
+                encrypted_data = file.read()
+
+            decrypted_data = encryptor.decrypt(encrypted_data)
+            output_path = os.path.join(os.getcwd(), filename)
+
+            with open(output_path, 'w') as file:
+                file.write(decrypted_data)
+
+            self.logger.info(f"Shared file '{filename}' decrypted and downloaded successfully.")
+            print(f"Shared file '{filename}' decrypted and downloaded successfully to {output_path}.")
+        except Exception as e:
+            self.logger.error(f"Error during shared file download: {e}")
             raise

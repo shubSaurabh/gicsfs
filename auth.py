@@ -27,7 +27,7 @@ class GitHubAuth:
             webbrowser.open(auth_url)
 
             # GitHub returns a URL with the authorization code after login
-            redirect_response = input("Paste the full redirect URL here: ")
+            redirect_response = input("Paste the full redirect URL here, https://localhost/?code=<code>&state=<state>: ")
             token = oauth.fetch_token(self.TOKEN_URL, client_secret=self.client_secret, authorization_response=redirect_response)
             self.session = oauth
             self.logger.info("OAuth2 authentication successful.")

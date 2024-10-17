@@ -11,6 +11,7 @@ import os
 import sys
 from pysqlcipher3 import dbapi2 as sqlite
 import getpass
+import re
 
 def prompt_for_github_client_id():
     return input("Enter GitHub Client ID: ")
@@ -44,101 +45,164 @@ def setup_database(master_password, logger):
         logger.error(f"Error setting up database: {e}")
         return False
 
+def validate_input(input_string, input_type, logger):
+    """
+    Validate and sanitize user input.
+    
+    :param input_string: The input string to validate
+    :param input_type: The type of input (e.g., 'filename', 'path', 'username', 'command', 'usernames')
+    :return: Sanitized input string or None if invalid
+    """
+    if not input_string:
+        return None
+
+    # Remove any leading/trailing whitespace
+    input_string = input_string.strip()
+
+    if input_type == 'filename':
+        # Allow alphanumeric characters, underscores, hyphens, periods, and spaces
+        # Disallow any path traversal attempts
+        if re.match(r'^[\w\s.-]+$', input_string) and '..' not in input_string:
+            return input_string
+    elif input_type == 'path':
+        # Normalize the path and check if it's within the allowed directory
+        normalized_path = os.path.abspath(os.path.normpath(input_string))
+        base_dir = os.path.abspath(os.getcwd())  # Or your defined base directory
+        if normalized_path.startswith(base_dir) and '..' not in input_string:
+            return normalized_path
+    elif input_type == 'username' or input_type == 'usernames':
+        # Allow alphanumeric characters, underscores, digits, and dots, but must start with a letter or underscore
+        username_pattern = r'^[a-zA-Z_][\w\d.]*$'
+        if input_type == 'username':
+            if re.match(username_pattern, input_string):
+                logger.info(f"Valid username: {input_string}")
+                return input_string
+        else:  # usernames
+            usernames = [username.strip() for username in input_string.split(',')]
+            valid_usernames = [username for username in usernames if re.match(username_pattern, username)]
+            invalid_usernames = [username for username in usernames if username not in valid_usernames]
+            if invalid_usernames:
+                logger.warning(f"Invalid usernames: {', '.join(invalid_usernames)}")
+            return valid_usernames  # Return the list even if it's empty
+    elif input_type == 'command':
+        # Allow only specific commands
+        valid_commands = ['upload', 'download', 'list', 'delete', 'share', 'shared_file', 'exit', 'admin', 'login', 're-register', 'list-users', 'register']
+        if input_string.lower() in valid_commands:
+            return input_string.lower()
+
+    return None
+
+def verify_master_password(db_manager, master_password):
+    try:
+        # Attempt to connect to the database with the provided master password
+        db_manager.connect(master_password)
+        # If successful, close the connection and return True
+        db_manager.conn.close()
+        return True
+    except Exception as e:
+        # If connection fails, the master password is incorrect
+        return False
+
 def main():
     logger = Logger('GICSFS-CLI.log').logger
     config_manager = ConfigManager(logger)
 
     # Continuous CLI session
-    
-    
     while True:
-        if config_manager.get_registration_complete() == False:
+        if not config_manager.get_registration_complete():
             print("\nWelcome to GIC's Secure File Storage CLI")
             print("Type 'register' to register the application, or type 'exit' to quit.")
             print("Disclaimer: This code is written by Shubham Saurabh as part of an interview assessment exercise by GIC and is not intended to be used for any other purpose. Enjoy!")
-            user_input = input("GICSFS> ").strip().lower()
+            user_input = validate_input(input("GICSFS> ").strip().lower(), 'command', logger)
             
             if user_input == 'exit':
                 print("Exiting the CLI session. Thank you for using GIC's Secure File Storage CLI!")
                 break
-        
-             
-            try:
-                if user_input == 'register':
-                    # Registration process
-                    if config_manager.get_registration_complete() == True:
-                        print("Registration already completed. Please proceed to the next step.")
-                        continue
+            elif user_input != 'register':
+                print("Invalid command. Only acceptable commands are 'register' or 'exit'.")
+                logger.error("Invalid command. Only acceptable commands are 'register' or 'exit'.")
+                continue
 
-                    master_password = prompt_for_master_password()
-                    if setup_database(master_password, logger):
-                        salt = AESEncryptor.generate_key_and_salt()
-                        config_manager.set_salt(salt[1])
-                        
-                        github_client_id = prompt_for_github_client_id()
-                        config_manager.set_client_id(github_client_id)
-                        
-                        github_client_secret = prompt_for_github_client_secret()
-                        encryptor = AESEncryptor(master_password, salt[1], config_manager, logger)
-                        encrypted_client_secret = encryptor.encrypt(github_client_secret)
-                        config_manager.set_encrypted_client_secret(encrypted_client_secret)
-                        
-                        storage_path = prompt_for_storage_path()
-                        config_manager.set_storage_path(storage_path)
-                        
-                        print("Registration completed successfully.")
-                        logger.info("Registration completed successfully.")
-                        config_manager.set_registration_complete(True)
-                    else:
-                        print("Registration failed. Please try again.")
-                    continue
-                else:
-                    print("Invalid command. Only acceptable commands are 'register' or 'exit'.")
-                    logger.error("Invalid command. Only acceptable commands are 'register' or 'exit'.")
-                    config_manager.set_registration_complete(False)
-                    sys.exit(1)
-            except Exception as e:
-                print(f"Error during registration: {e}")
-                logger.error(f"Error during registration: {e}")
-                os.remove('storage.db')
-                os.remove('config.json')
-                config_manager.set_registration_complete(False)
-                sys.exit(1)
+            # Registration process
+            if config_manager.get_registration_complete() == True:
+                print("Registration already completed. Please proceed to the next step.")
+                continue
+
+            master_password = prompt_for_master_password()
+            if setup_database(master_password, logger):
+                salt = AESEncryptor.generate_key_and_salt()
+                config_manager.set_salt(salt[1])
+                
+                github_client_id = prompt_for_github_client_id()
+                config_manager.set_client_id(github_client_id)
+                
+                github_client_secret = prompt_for_github_client_secret()
+                encryptor = AESEncryptor(master_password, salt[1], config_manager, logger)
+                encrypted_client_secret = encryptor.encrypt(github_client_secret)
+                config_manager.set_encrypted_client_secret(encrypted_client_secret)
+                
+                storage_path = prompt_for_storage_path()
+                config_manager.set_storage_path(storage_path)
+                
+                print("Registration completed successfully.")
+                logger.info("Registration completed successfully.")
+                config_manager.set_registration_complete(True)
+            else:
+                print("Registration failed. Please try again.")
+            continue
         else:
             print("\nWelcome to GIC's Secure File Storage CLI")
             print("You are already registered. Please proceed with your master password to proceed.")
-            print("Type admin to enter admin mode, or just press enter to proceed as a normal user.")
-            user_input = input("GICSFS> ").strip().lower()
+            print("Type admin to enter admin mode, or just enter login to proceed as a normal user.")
+            user_input = validate_input(input("GICSFS> ").strip().lower(), 'command', logger)
             if user_input == 'exit':
                 print("Exiting the session.")
                 break
+            
+            if user_input in ['admin', 'login']:
+                master_password = prompt_for_master_password()
+                db_manager = SQLiteManager('storage.db', logger)
+                if not verify_master_password(db_manager, master_password):
+                    print("Incorrect master password. Please try again.")
+                    logger.warning("Failed login attempt with incorrect master password.")
+                    continue
 
             if user_input == 'admin':
                 print("Admin mode enabled.")
-                # Add admin mode functionality here
-                print("What would you like to do? Type re-register to re-register the application, type list-users to list all users, or type exit to quit.")
-                user_input = input("GICSFS> ").strip().lower()
-                if user_input == 're-register':
-                    print("Re-registering the application.")
-                    os.remove('storage.db')
-                    os.remove('config.json')
-                    config_manager.set_registration_complete(False)
-                    continue
-                elif user_input == 'list-users':
-                    print("Listing all users.")
-                    db_manager = SQLiteManager('storage.db', logger)
-                    print(db_manager.list_all_users())
-                    continue   
-                elif user_input == 'exit':
-                    print("Exiting the session.")
-                    break
-            else:
+                while True:  # Start an admin mode loop
+                    print("What would you like to do? Type re-register to re-register the application, type list-users to list all users, or type exit to quit admin mode.")
+                    admin_input = validate_input(input("GICSFS Admin> ").strip().lower(), 'command', logger)
+                    if admin_input == 're-register':
+                        print("Re-registering the application.")
+                        os.remove('storage.db')
+                        os.remove('config.json')
+                        config_manager.set_registration_complete(False)
+                        print("Application re-registered. Please restart the CLI.")
+                        return  # Exit the main function
+                    elif admin_input == 'list-users':
+                        print("Listing all users.")
+                        db_manager = SQLiteManager('storage.db', logger)
+                        db_manager.connect(master_password)
+                        users = db_manager.list_all_users()
+                        print("Users:", ', '.join(users))
+                        db_manager.conn.close()
+                    elif admin_input == 'exit':
+                        print("Exiting admin mode.")
+                        break  # Break out of the admin mode loop
+                    else:
+                        print("Invalid admin command. Please try again.")
+                continue  # Go back to the start of the main loop
+            elif user_input == 'login':
+                logger.info("User login initiated.")
                 # Prompt for master password for normal operations
-                master_password = prompt_for_master_password()
-                if master_password == 'exit':
-                    print("Exiting the session.")
-                    break
-            
+                #master_password = prompt_for_master_password()
+                #if master_password == 'exit':
+                #    print("Exiting the session.")
+                #    break
+            else:
+                print("Invalid command. Only acceptable commands are 'admin' or 'login'.")
+                logger.error("Invalid command. Only acceptable commands are 'admin' or 'login'.")
+                continue
 
             # Initialize the encryptor with the master password and load GitHub credentials from config
             encryptor = AESEncryptor(master_password, config_manager.get_salt(), config_manager, logger)
@@ -182,27 +246,70 @@ def main():
             print(f"Authenticated as {username}. You can now upload, download, list, or delete files. Type 'exit' to quit.")
 
             while True:
-                operation_input = input("Enter command (upload, download, list, delete, exit): ").strip().lower()
+                operation_input = validate_input(input("Enter command (upload, download, list, delete, share, shared_file, exit): ").strip().lower(), 'command', logger)
 
                 if operation_input == 'exit':
                     print("Exiting the session.")
                     db_manager.conn.close()  # Close the database connection
                     break
+                elif not operation_input:
+                    print("Invalid command. Please try again.")
+                    continue
 
                 try:
                     if operation_input == 'upload':
-                        file_path = input("Enter the path to the file: ").strip()
+                        file_path = validate_input(input("Enter the path to the file: ").strip(), 'path', logger)
+                        if not file_path:
+                            print("Invalid file path. Please try again.")
+                            continue
                         file_manager.upload(username, file_path)
                     elif operation_input == 'download':
-                        filename = input("Enter the filename to download: ").strip()
+                        filename = validate_input(input("Enter the filename to download: ").strip(), 'filename', logger)
+                        if not filename:
+                            print("Invalid filename. Please try again.")
+                            continue
                         file_manager.download(username, filename)
                     elif operation_input == 'delete':
-                        filename = input("Enter the filename to delete: ").strip()
+                        filename = validate_input(input("Enter the filename to delete: ").strip(), 'filename', logger)
+                        if not filename:
+                            print("Invalid filename. Please try again.")
+                            continue
                         file_manager.delete(username, filename)
                     elif operation_input == 'list':
                         file_manager.list_files(username)
-                    else:
-                        print("Invalid command. Please enter 'upload', 'download', 'list', 'delete', or 'exit'.")
+                    elif operation_input == 'share':
+                        filename = validate_input(input("Enter the filename to share: ").strip(), 'filename', logger)
+                        if not filename:
+                            print("Invalid filename. Please try again.")
+                            continue
+                        shared_users_input = input("Enter comma-separated usernames to share with: ").strip()
+                        valid_shared_users = validate_input(shared_users_input, 'usernames', logger)
+                        if not valid_shared_users:
+                            print("No valid usernames provided. Please try again.")
+                            continue
+                        
+                        # Check if there were any invalid usernames
+                        all_users = [user.strip() for user in shared_users_input.split(',')]
+                        invalid_users = [user for user in all_users if user not in valid_shared_users]
+                        
+                        if invalid_users:
+                            print(f"Warning: The following usernames are invalid and will be ignored: {', '.join(invalid_users)}")
+                        
+                        if valid_shared_users:
+                            print(f"Sharing file '{filename}' with valid users: {', '.join(valid_shared_users)}")
+                            file_manager.share(username, filename, valid_shared_users)
+                        else:
+                            print("No valid usernames provided. File not shared.")
+                    elif operation_input == 'shared_file':
+                        owner_username = validate_input(input("Enter the file owner's username: ").strip(), 'username', logger)
+                        if not owner_username:
+                            print("Invalid username. Please try again.")
+                            continue
+                        filename = validate_input(input("Enter the filename to download: ").strip(), 'filename', logger)
+                        if not filename:
+                            print("Invalid filename. Please try again.")
+                            continue
+                        file_manager.download_shared_file(owner_username, filename, username)
                 except Exception as e:
                     print(f"Error during operation: {e}")
                     logger.error(f"Error during operation: {e}")

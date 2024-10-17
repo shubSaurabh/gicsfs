@@ -193,9 +193,60 @@ class SQLiteManager:
         """List all users in the database."""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '%_keys'")
             users = cursor.fetchall()
-            return [user[0] for user in users]
+            cleaned_users = []
+            for user in users:
+                if user[0].count('_') == 1:
+                    cleaned_users.append(user[0].split('_')[0])
+
+
+            return cleaned_users
         except Exception as e:
             self.logger.error(f"Error listing all users: {e}")  
 
+    def share_file(self, owner_username, file_name, shared_users):
+        """Add shared users to a file's metadata."""
+        try:
+            cursor = self.conn.cursor()
+            # First, get the current shared users
+            cursor.execute(f'''
+                SELECT shared_user FROM {owner_username}_files
+                WHERE file_name = ? AND delete_date IS NULL
+            ''', (file_name,))
+            result = cursor.fetchone()
+            if not result:
+                raise Exception(f"File '{file_name}' not found for user '{owner_username}'")
+            
+            current_shared_users = result[0] or ""
+            new_shared_users = current_shared_users.split(',') if current_shared_users else []
+            for user in shared_users:
+                if user not in new_shared_users:
+                    new_shared_users.append(user)
+            
+            updated_shared_users = ','.join(new_shared_users)
+            
+            cursor.execute(f'''
+                UPDATE {owner_username}_files
+                SET shared_user = ?
+                WHERE file_name = ? AND delete_date IS NULL
+            ''', (updated_shared_users, file_name))
+            self.conn.commit()
+            self.logger.info(f"File '{file_name}' shared with users: {shared_users}")
+        except Exception as e:
+            self.logger.error(f"Error sharing file: {e}")
+            raise
+
+    def get_shared_file_metadata(self, owner_username, file_name, requesting_username):
+        """Retrieve metadata for a shared file."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(f'''
+                SELECT * FROM {owner_username}_files
+                WHERE file_name = ? AND delete_date IS NULL AND shared_user LIKE ?
+            ''', (file_name, f"%{requesting_username}%"))
+            file_metadata = cursor.fetchone()
+            return file_metadata
+        except Exception as e:
+            self.logger.error(f"Error retrieving shared file metadata: {e}")
+            raise
