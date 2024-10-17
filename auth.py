@@ -7,9 +7,9 @@ import logging
 class GitHubAuth:
     AUTH_URL = "https://github.com/login/oauth/authorize"
     TOKEN_URL = "https://github.com/login/oauth/access_token"
-    REDIRECT_URI = "https://localhost"  # Use http instead of https for local CLI-based flow
+    REDIRECT_URI = "https://localhost"  # Use https as github does not allow http
     
-    SCOPE = "read:user,repo"  # Use space-separated scope
+    SCOPE = "read:user,repo" 
 
     def __init__(self, client_id, client_secret, logger=None):
         self.client_id = client_id
