@@ -1,0 +1,6 @@
+requests
+requests-oauthlib
+pycryptodome
+
+apt install sqlcipher libsqlcipher0 libsqlcipher-dev
+from pysqlcipher3 import dbapi2 as sqlite
