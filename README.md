@@ -137,7 +137,8 @@ If you encounter any issues during installation, please check that all system de
 
 Cli is the entry point for the program. It is a console based interface that allows users to interact with the program.
 
-Db_manager is the module that manages the database. It has following methods:
+### Db_manager
+This module manages the database. It has following methods:
 
 1. create_tables
 2. add_user
@@ -147,7 +148,8 @@ Db_manager is the module that manages the database. It has following methods:
 6. update_shared_users
 7. get_shared_file_metadata
 
-File_ops is the module that contains the logic for the file operations. It has following methods:
+### File_ops
+This module contains the logic for the file operations. It has following methods:
 
 1. upload
 2. download
@@ -157,26 +159,13 @@ File_ops is the module that contains the logic for the file operations. It has f
 6. unshare_all
 7. download_shared_file
 
-Logger is the module that is used to log the messages to a file. It is used to log the messages to a file.
+### Logger
+This module that is used to log the messages to a file. It is used to log the messages to a file. this is where log level can be changed. DEBUG will print senstive information like github oauth flow details and INFO will print other details.
 
-auth.py is the module that contains the logic for the authentication using Github OAuth authorization code flow.
+### auth.py 
+This module contains the logic for the authentication using Github OAuth authorization code flow.
 
-It uses the PyCryptodome library for encryption and decryption.
+### cli.py  
+This module is the entry point for the program. It is the first module that is executed. It contains the main logic for the program. It uses the PyCryptodome library for encryption and decryption.
 
-It uses the SQLite library for the database.
 
-It uses the SQLite Cipher library for the database.
-
-It allows users to upload, download, delete, and list files.
-
-It allows users to share files with other users.
-
-It allows users to unshare files with other users.
-
-It allows users to list all files in the system.
-
-It allows users to list all users in the system.
-
-If same file is uploaded twice, it will be stored only once in the database and the path will be the same. 
-
-Files will be encrypted with a random AES key and the key is stored in the database. The master password is used to derive a key from the user's master password and the salt is stored in the database.
