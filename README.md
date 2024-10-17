@@ -15,14 +15,18 @@ This is a CLI based secure file storage system that uses AES encryption to encry
 3. Database - sqllite3 encrypted using SQLiteCipher
 4. File operations
 
-This system is built with strong access management principles and secures data and access to it at every level. For instance:
+
+This system's requirments had a fundamental missing block, which was how to secure user's keys and all the metadata itself. Oauth authentication can only authorize a user, however, we needed to protect CLI too as it is a shared component. To solve this problem i have added an additional layer of protection using 'master password' This, master password is used for following:
+1. To derive a key which will be used to secure access to database.
+2. All user's will have to authenticate themselves with master password to access the CLI. This will divide access management into two parts, one at the CLI level and other at file operation level. Access to CLI itself is restricted, and then access to files is authorised using github oauth flow.
+
+Furthermore, this system is built with strong access management principles and secures data and access to it at every level. For instance:
 
 1. Although its a multi user system, a user can only access its own files, and no other user's files. 
-2. Github token is only stored in memory which is released the moment user exits the CLI.
-3. System provides an admin user option to re-register the CLI with new oauth app, and to list all users. However admin user CANNOT access any user's files and re-registration will delete the old database and configurations but not the encrypted files.
-4. All data is encrypted using AES encryption algorithm, and the master password is used to derive a key from the user's master password and the salt is stored in the database. Since we need to secure user's keys, and all user related data it is done using a master password. Which means that user's data is not at all accessible to anyone including the user himself without the master password. Master password is also used to authenticate whether a user is authorized to access the secure file storage or not. Only after this, a user can then move on to login.
-5. All user related data is stored in a json file, and client secret is also encrypted using key derived from master password.
-6. CLI is completely based on python, it uses only standard libraries. It uses sqlite3 to store the user's data and github oauth authorization code flow to authenticate the user. it uses encrypted version of sqllite3, SQLiteCipher to encrypt and decrypt the database. 
+2. Each user's data is encrypted using their own unique key, using AES encryption algorithm, which is stored in the database. No operation allows access to keys, and any access to database needs master password and oauth flow.
+3. Github token is only stored in memory which is released the moment user exits the CLI.
+4. All user related data is stored in a json file, and client secret is also encrypted using key derived from master password.
+5. CLI is completely based on python, it uses only standard libraries. It uses sqlite3 to store the user's data and github oauth authorization code flow to authenticate the user. it uses encrypted version of sqllite3, SQLiteCipher to encrypt and decrypt the database. 
 
 Each user will have two tables, one for storing file metadata including sharing details and other for storing key. Each user will have unique key and salt for file encryption, therefore two users CANNOT decrypt each other's files.
 
