@@ -282,24 +282,29 @@ def main():
                         if not filename:
                             print("Invalid filename. Please try again.")
                             continue
-                        shared_users_input = input("Enter comma-separated usernames to share with: ").strip()
-                        valid_shared_users = validate_input(shared_users_input, 'usernames', logger)
-                        if not valid_shared_users:
-                            print("No valid usernames provided. Please try again.")
-                            continue
                         
-                        # Check if there were any invalid usernames
-                        all_users = [user.strip() for user in shared_users_input.split(',')]
-                        invalid_users = [user for user in all_users if user not in valid_shared_users]
+                        print("Enter comma-separated usernames to share with, or type 'unshare_all' to remove all sharing:")
+                        shared_users_input = input().strip()
                         
-                        if invalid_users:
-                            print(f"Warning: The following usernames are invalid and will be ignored: {', '.join(invalid_users)}")
-                        
-                        if valid_shared_users:
-                            print(f"Sharing file '{filename}' with valid users: {', '.join(valid_shared_users)}")
-                            file_manager.share(username, filename, valid_shared_users)
+                        if shared_users_input.lower() == 'unshare_all':
+                            file_manager.unshare_all(username, filename)
+                            print(f"File '{filename}' is no longer shared with anyone.")
                         else:
-                            print("No valid usernames provided. File not shared.")
+                            valid_shared_users = validate_input(shared_users_input, 'usernames', logger)
+                            
+                            if not valid_shared_users:
+                                print("No valid usernames provided. Please try again.")
+                                continue
+                            
+                            # Check if there were any invalid usernames
+                            all_users = [user.strip() for user in shared_users_input.split(',')]
+                            invalid_users = [user for user in all_users if user not in valid_shared_users]
+                            
+                            if invalid_users:
+                                print(f"Warning: The following usernames are invalid and will be ignored: {', '.join(invalid_users)}")
+                            
+                            file_manager.share(username, filename, valid_shared_users)
+                            print(f"File '{filename}' shared with: {', '.join(valid_shared_users)}")
                     elif operation_input == 'shared_file':
                         owner_username = validate_input(input("Enter the file owner's username: ").strip(), 'username', logger)
                         if not owner_username:

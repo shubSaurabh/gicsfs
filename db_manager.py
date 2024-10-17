@@ -250,3 +250,19 @@ class SQLiteManager:
         except Exception as e:
             self.logger.error(f"Error retrieving shared file metadata: {e}")
             raise
+
+    def update_shared_users(self, owner_username, filename, shared_users):
+        """Update the shared users for a file."""
+        try:
+            cursor = self.conn.cursor()
+            shared_users_str = ','.join(shared_users)
+            cursor.execute(f"""
+                UPDATE {owner_username}_files
+                SET shared_user = ?
+                WHERE file_name = ? AND delete_date IS NULL
+            """, (shared_users_str, filename))
+            self.conn.commit()
+            self.logger.info(f"Updated shared users for file '{filename}' owned by {owner_username}")
+        except Exception as e:
+            self.logger.error(f"Error updating shared users: {e}")
+            raise
