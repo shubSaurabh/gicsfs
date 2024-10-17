@@ -229,7 +229,7 @@ def main():
                 print(f"GitHub authentication failed: {e}")
                 logger.error(f"GitHub authentication failed: {e}")
                 db_manager.conn.close()  # Close the database connection before continuing
-                continue  # If authentication fails, restart loop
+                continue  
 
             # Validate the access token
             response = validate_access_token(access_token)
