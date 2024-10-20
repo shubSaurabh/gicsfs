@@ -58,7 +58,7 @@ Furthermore, this system is built with strong access management principles and s
 The CLI acts as the central component, interfacing with GitHub for authentication, the encrypted database for storing and retrieving metadata, and the file system for managing encrypted files.
 
 1. Although its a multi user system, a user can only access its own files, and no other user's files. 
-2. Each user's data is encrypted using their own unique key, using AES encryption algorithm, which is stored in the database. No operation allows access to keys, and any access to database needs master password and oauth flow.
+2. Each user's data is encrypted using their own unique key, using AES-256 encryption algorithm, which is stored in the database. No operation allows access to keys, and any access to database needs master password and oauth flow.
 3. Github token is only stored in memory which is released the moment user exits the CLI.
 4. All user related data is stored in a json file, and client secret is also encrypted using key derived from master password.
 5. CLI is completely based on python, it uses only standard libraries. It uses sqlite3 to store the user's data and github oauth authorization code flow to authenticate the user. it uses encrypted version of sqllite3, SQLiteCipher to encrypt and decrypt the database. 
