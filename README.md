@@ -16,11 +16,46 @@ This is a CLI based secure file storage system that uses AES encryption to encry
 4. File operations
 
 
-This system's requirments had a fundamental missing block, which was how to secure user's keys and all the metadata itself. Oauth authentication can only authorize a user, however, we needed to protect CLI too as it is a shared component. To solve this problem i have added an additional layer of protection using 'master password' This, master password is used for following:
-1. To derive a key which will be used to secure access to database.
-2. All user's will have to authenticate themselves with master password to access the CLI. This will divide access management into two parts, one at the CLI level and other at file operation level. Access to CLI itself is restricted, and then access to files is authorised using github oauth flow.
-
+This system's requirments had two fundamental missing block, 
+1. how to secure user's keys and all the metadata itself. Oauth authentication can only authorize a user, however, we needed to protect CLI too as it is a shared component. To solve this problem i have added an additional layer of protection using 'master password' This, master password is used for following:
+    1. To derive a key which will be used to secure access to database.
+    2. All user's will have to authenticate themselves with master password to access the CLI. This will divide access management into two parts, one at the CLI level and other at file operation level. Access to CLI itself is restricted, and then access to files is authorised using github oauth flow.
+2. How to protect local system from unauthorized access, user's commands should not be run directly on the system. To solve this problem I have added a layer using sqllite3 encrypted using SQLiteCipher. This will ensure that all user read operations (list and share) related to files go through database and write operations (upload, delete and  download) are only allowed after successful decryption of database using master password and retrival of user key after oauth flow authorization.
 Furthermore, this system is built with strong access management principles and secures data and access to it at every level. For instance:
+
+
+```
+                  +-------------+
+                  |    User     |
+                  +------+------+
+                         |
+                         v
+                  +------+------+
+                  |     CLI     |
+                  +------+------+
+                         |
+           +-------------+-------------+
+           |                           |
+           v                           v
+    +------+------+            +-------+-------+
+    |   GitHub    |            |   Database    |
+    | (Auth/Auth) |            | (SQLiteCipher)|
+    +-------------+            +-------+-------+
+                                       |
+                                       v
+                               +-------+-------+
+                               |  File System  |
+                               |  (Encrypted   |
+                               |    Files)     |
+                               +---------------+
+```
+1. **User**: Interacts with the system through the Command Line Interface (CLI).
+2. **CLI**: The main interface for all user operations. It manages user input and coordinates interactions with other components.
+3. **GitHub**: Used for user authentication and authorization via OAuth flow.
+4. **Database**: An SQLiteCipher-encrypted database that stores user metadata including user's keys, file information, and encryption keys.
+5. **File System**: Where the encrypted files are stored on the local machine.
+
+The CLI acts as the central component, interfacing with GitHub for authentication, the encrypted database for storing and retrieving metadata, and the file system for managing encrypted files.
 
 1. Although its a multi user system, a user can only access its own files, and no other user's files. 
 2. Each user's data is encrypted using their own unique key, using AES encryption algorithm, which is stored in the database. No operation allows access to keys, and any access to database needs master password and oauth flow.
