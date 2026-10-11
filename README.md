@@ -216,3 +216,9 @@ Since this is a CLI based application, testing is done manually. However i have 
 5. Share a file with other users and check if the file is shared.
 6. Unshare a file with other users and check if the file is unshared.
 7. List all users and check if the users are listed.
+
+## License
+
+[Business Source License 1.1](LICENSE). You can use, modify and self-host it for free, including in production
+inside your own organization. You may not sell it or offer it as a hosted service. Each version becomes
+Apache 2.0 four years after it is published. Copyright SecurITaaS. For other licensing, contact SecurITaaS.
