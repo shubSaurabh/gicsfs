@@ -221,4 +221,4 @@ Since this is a CLI based application, testing is done manually. However i have 
 
 [Business Source License 1.1](LICENSE). You can use, modify and self-host it for free, including in production
 inside your own organization. You may not sell it or offer it as a hosted service. Each version becomes
-Apache 2.0 four years after it is published. Copyright SecurITaaS. For other licensing, contact SecurITaaS.
+Apache 2.0 four years after it is published. Copyright SecurITaaS Pte Ltd. For other licensing, contact SecurITaaS Pte Ltd.
